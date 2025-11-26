@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Lego Builder</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1e1e1e;
+            color: #f1f1f1;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            text-align: center;
+            color: #ffcc00;
+            text-shadow: 2px 2px 5px #000;
+        }
+
+        #controls {
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        input[type="file"] {
+            padding: 5px;
+            border-radius: 5px;
+            border: none;
+        }
+
+        button {
+            padding: 8px 16px;
+            margin-top: 10px;
+            border: none;
+            border-radius: 5px;
+            background-color: #ffcc00;
+            color: #222;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background-color: #e6b800;
+        }
+
+        #status {
+            margin-top: 10px;
+            font-style: italic;
+        }
+
+        #canvas-container {
+            background: #333;
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        canvas {
+            display: block;
+            margin: 0 auto;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>LEGO Builder — Adaptativo</h1>
+
+    <div id="controls">
+        <input id="fileInput" type="file" accept="image/*">
+        <button onclick="upload()">Subir imagen</button>
+        <p id="status"></p>
+    </div>
+
+    <div id="canvas-container">
+        <canvas id="canvas"></canvas>
+    </div>
+
+    <script>
+        async function upload() {
+            const fileInput = document.getElementById("fileInput");
+            const status = document.getElementById("status");
+
+            if (!fileInput.files.length) {
+                alert("Selecciona una imagen primero.");
+                return;
+            }
+
+            const file = fileInput.files[0];
+            let form = new FormData();
+            form.append("file", file);
+
+            status.innerText = "Procesando imagen...";
+
+            try {
+                const res = await fetch("http://127.0.0.1:8000/upload", {
+                    method: "POST",
+                    body: form
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    status.innerText = "Error: " + (err.detail || "Unknown");
+                    return;
+                }
+
+                const data = await res.json();
+                status.innerText = "¡Imagen convertida a LEGO! Dibujando...";
+                drawLego(data.lego_data);
+            } catch (e) {
+                status.innerText = "Error: " + e.message;
+            }
+        }
+
+        function drawLego(lego) {
+            const canvas = document.getElementById("canvas");
+            const ctx = canvas.getContext("2d");
+
+            const w = lego.dimensions[0];
+            const h = lego.dimensions[1];
+
+            const maxCanvasSize = 600;
+            const pixel = Math.floor(maxCanvasSize / Math.max(w, h));
+
+            canvas.width = w * pixel;
+            canvas.height = h * pixel;
+
+            lego.blocks.forEach(block => {
+                const [r, g, b] = block.color;
+                // Bloque base
+                ctx.fillStyle = `rgb(${r},${g},${b})`;
+                ctx.fillRect(block.x * pixel, block.y * pixel, pixel, pixel);
+
+                // Bordes
+                ctx.strokeStyle = "rgba(0,0,0,0.4)";
+                ctx.strokeRect(block.x * pixel, block.y * pixel, pixel, pixel);
+
+                // Stud (círculo)
+                ctx.fillStyle = "rgba(255,255,255,0.3)";
+                const radius = pixel / 4;
+                ctx.beginPath();
+                ctx.arc(block.x * pixel + pixel/2, block.y * pixel + pixel/2, radius, 0, Math.PI*2);
+                ctx.fill();
+            });
+        }
+    </script>
+</body>
+
+</html>
