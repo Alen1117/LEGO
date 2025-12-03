@@ -1,12 +1,17 @@
 # Entorno virtual
 .venv/
+venv/
+env/
 
 # Archivos de Python
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
 
 # Entornos/variables
 *.env
+.env.local
 
 # Configuración de editor
 .vscode/
@@ -14,3 +19,14 @@ __pycache__/
 
 # Logs
 *.log
+
+# Uploads temporales (no subir imágenes al repo)
+backend/uploads/
+data/uploads/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Railway
+.railway/
