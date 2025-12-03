@@ -1,159 +1,193 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
-    <title>Lego Builder</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LEGO Album Builder</title>
+
     <style>
+        /* Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #1e1e1e;
-            color: #f1f1f1;
-            margin: 0;
-            padding: 20px;
+            background: #121212;
             display: flex;
-            flex-direction: column;
+            justify-content: center;
             align-items: center;
+            min-height: 100vh;
+            color: #fff;
+        }
+
+        .container {
+            background: #1e1e1e;
+            padding: 50px 35px;
+            border-radius: 25px;
+            width: 420px;
+            text-align: center;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.7);
+            transition: transform 0.3s;
+        }
+
+        .container:hover {
+            transform: translateY(-5px);
         }
 
         h1 {
-            font-size: 2rem;
-            margin-bottom: 10px;
-            text-align: center;
-            color: #ffcc00;
-            text-shadow: 2px 2px 5px #000;
+            font-size: 2em;
+            color: #e63946; /* rojo suave */
+            margin-bottom: 30px;
+            text-shadow: 1px 1px 6px rgba(0,0,0,0.7);
         }
 
-        #controls {
-            margin-bottom: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        input[type="file"] {
-            padding: 5px;
-            border-radius: 5px;
+        input[type="file"], select {
+            display: block;
+            margin: 15px auto;
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
             border: none;
-        }
-
-        button {
-            padding: 8px 16px;
-            margin-top: 10px;
-            border: none;
-            border-radius: 5px;
-            background-color: #ffcc00;
-            color: #222;
-            font-weight: bold;
+            font-size: 14px;
             cursor: pointer;
+            background: #2c2c2c;
+            color: #fff;
             transition: background 0.3s;
         }
 
+        input[type="file"]:hover, select:hover {
+            background: #3a3a3a;
+        }
+
+        button {
+            margin-top: 25px;
+            padding: 15px 30px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #fff;
+            background: linear-gradient(135deg, #e63946, #a4161a);
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        }
+
         button:hover {
-            background-color: #e6b800;
+            background: linear-gradient(135deg, #ff4f5a, #b71c1c);
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.6);
         }
 
-        #status {
-            margin-top: 10px;
-            font-style: italic;
+        .preview-container {
+            margin-top: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            align-items: center;
         }
 
-        #canvas-container {
-            background: #333;
-            padding: 10px;
-            border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        img {
+            max-width: 260px;
+            border-radius: 16px;
+            border: 2px solid #3a1f1f;
+            object-fit: contain;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
         }
 
-        canvas {
-            display: block;
-            margin: 0 auto;
-            border-radius: 5px;
+        img.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        select {
+            background: #2c2c2c;
+            border: 2px solid #e63946;
+        }
+
+        select option {
+            background: #2c2c2c;
+            color: #fff;
         }
     </style>
 </head>
-
 <body>
-    <h1>LEGO Builder — Adaptativo</h1>
 
-    <div id="controls">
-        <input id="fileInput" type="file" accept="image/*">
-        <button onclick="upload()">Subir imagen</button>
-        <p id="status"></p>
-    </div>
+    <div class="container">
+        <h1>LEGO Album Builder</h1>
 
-    <div id="canvas-container">
-        <canvas id="canvas"></canvas>
+        <input type="file" id="fileInput" accept="image/*">
+        <select id="sizeSelect">
+            <option value="32">32x32</option>
+            <option value="48">48x48</option>
+            <option value="64">64x64</option>
+        </select>
+        <button id="convertBtn">Convertir a LEGO</button>
+
+        <div class="preview-container">
+            <img id="originalPreview" alt="Imagen Original">
+            <img id="legoPreview" alt="Preview LEGO">
+        </div>
     </div>
 
     <script>
-        async function upload() {
-            const fileInput = document.getElementById("fileInput");
-            const status = document.getElementById("status");
+        const fileInput = document.getElementById("fileInput");
+        const sizeSelect = document.getElementById("sizeSelect");
+        const convertBtn = document.getElementById("convertBtn");
+        const originalPreview = document.getElementById("originalPreview");
+        const legoPreview = document.getElementById("legoPreview");
 
-            if (!fileInput.files.length) {
-                alert("Selecciona una imagen primero.");
+        let selectedFile = null;
+
+        fileInput.addEventListener("change", () => {
+            const file = fileInput.files[0];
+            if (!file) return;
+            selectedFile = file;
+
+            originalPreview.src = URL.createObjectURL(file);
+            originalPreview.classList.add("show");
+
+            legoPreview.src = "";
+            legoPreview.classList.remove("show");
+        });
+
+        async function sendImage() {
+            if (!selectedFile) {
+                alert("Sube una imagen primero");
                 return;
             }
 
-            const file = fileInput.files[0];
-            let form = new FormData();
-            form.append("file", file);
-
-            status.innerText = "Procesando imagen...";
+            const formData = new FormData();
+            formData.append("file", selectedFile);
+            formData.append("size", parseInt(sizeSelect.value));
 
             try {
                 const res = await fetch("http://127.0.0.1:8000/upload", {
                     method: "POST",
-                    body: form
+                    body: formData
                 });
 
-                if (!res.ok) {
-                    const err = await res.json();
-                    status.innerText = "Error: " + (err.detail || "Unknown");
-                    return;
-                }
+                if (!res.ok) throw new Error("Error al subir la imagen");
 
                 const data = await res.json();
-                status.innerText = "¡Imagen convertida a LEGO! Dibujando...";
-                drawLego(data.lego_data);
-            } catch (e) {
-                status.innerText = "Error: " + e.message;
+
+                legoPreview.src = data.lego_preview;
+                legoPreview.classList.add("show");
+
+            } catch (err) {
+                console.error(err);
+                alert(err.message);
             }
         }
 
-        function drawLego(lego) {
-            const canvas = document.getElementById("canvas");
-            const ctx = canvas.getContext("2d");
-
-            const w = lego.dimensions[0];
-            const h = lego.dimensions[1];
-
-            const maxCanvasSize = 600;
-            const pixel = Math.floor(maxCanvasSize / Math.max(w, h));
-
-            canvas.width = w * pixel;
-            canvas.height = h * pixel;
-
-            lego.blocks.forEach(block => {
-                const [r, g, b] = block.color;
-                // Bloque base
-                ctx.fillStyle = `rgb(${r},${g},${b})`;
-                ctx.fillRect(block.x * pixel, block.y * pixel, pixel, pixel);
-
-                // Bordes
-                ctx.strokeStyle = "rgba(0,0,0,0.4)";
-                ctx.strokeRect(block.x * pixel, block.y * pixel, pixel, pixel);
-
-                // Stud (círculo)
-                ctx.fillStyle = "rgba(255,255,255,0.3)";
-                const radius = pixel / 4;
-                ctx.beginPath();
-                ctx.arc(block.x * pixel + pixel/2, block.y * pixel + pixel/2, radius, 0, Math.PI*2);
-                ctx.fill();
-            });
-        }
+        convertBtn.addEventListener("click", sendImage);
     </script>
-</body>
 
+</body>
 </html>
